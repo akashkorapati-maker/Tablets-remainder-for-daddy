@@ -5,25 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dad's Smart Health Tracker</title>
     <style>
-        body { 
-            font-family: 'Poppins', sans-serif; 
-            /* Updated Background for KDR */
-            background: linear-gradient(rgba(244, 247, 246, 0.8), rgba(244, 247, 246, 0.8)), 
-                        url('kdr.jpg'); 
-            background-size: cover;
-            background-attachment: fixed;
-            background-position: center;
-            margin: 0; 
-            padding: 15px; 
-            text-align: center; 
-        }
+        body { font-family: 'Poppins', sans-serif; background: #f4f7f6; margin: 0; padding: 15px; text-align: center; }
         .container { 
-            max-width: 400px; 
-            margin: auto; 
-            background: rgba(255, 255, 255, 0.95); /* Slightly transparent to see KDR */
-            padding: 25px; 
-            border-radius: 25px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+            max-width: 450px; margin: auto; background: white; padding: 25px; 
+            border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            /* KDR Background styling */
+            background-image: linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.9)), url('kdr.jpg');
+            background-size: contain; background-repeat: no-repeat; background-position: center;
         }
         h1 { color: #2c3e50; margin-bottom: 5px; font-size: 24px; }
         .date-display { color: #e74c3c; font-weight: bold; margin-bottom: 20px; font-size: 1.1rem; }
@@ -39,13 +27,140 @@
 
         .check-btn { 
             width: 60px; height: 60px; border-radius: 50%; border: none; 
-            background: #dfe6e9; cursor: pointer; font-size: 24px; color: white;
+            background: #dfe6e9; cursor: pointer; font-size: 22px; color: white;
             transition: all 0.4s ease; display: flex; align-items: center; justify-content: center;
         }
 
-        .taken { background: #2ecc71 !important; transform: scale(1.05); }
+        .taken { background: #2ecc71 !important; }
         .missed { background: #e74c3c !important; }
-        .waiting { background: #f1c40f !important; color: #fff; }
+        .waiting { background: #f1c40f !important; }
+
+        /* History Styles */
+        .history-section { margin-top: 30px; border-top: 2px dashed #eee; padding-top: 20px; }
+        .month-box { background: #f9f9f9; padding: 10px; border-radius: 10px; margin-bottom: 10px; text-align: left; }
+        .month-title { font-weight: bold; color: #2c3e50; margin-bottom: 5px; display: block; }
+        .stat-bar { font-size: 0.85rem; color: #7f8c8d; }
     </style>
 </head>
 <body>
+
+<div class="container">
+    <h1>Tablet Tracker</h1>
+    <div id="currentDate" class="date-display"></div>
+
+    <div id="tracker-list">
+        <div class="pill-card">
+            <div class="pill-info"><span class="pill-time">7:00 AM</span><span class="pill-name">1 Sugar Tablet</span></div>
+            <button class="check-btn" id="btn-1" onclick="markTaken(1)"></button>
+        </div>
+        <div class="pill-card">
+            <div class="pill-info"><span class="pill-time">9:00 AM (Post-Bf)</span><span class="pill-name">1 Sugar + 1 BP</span></div>
+            <button class="check-btn" id="btn-2" onclick="markTaken(2)"></button>
+        </div>
+        <div class="pill-card">
+            <div class="pill-info"><span class="pill-time">12:30 PM (Lunch)</span><span class="pill-name">2 Cancer Tablets</span></div>
+            <button class="check-btn" id="btn-3" onclick="markTaken(3)"></button>
+        </div>
+        <div class="pill-card">
+            <div class="pill-info"><span class="pill-time">6:00 PM (Eve)</span><span class="pill-name">1 Sugar Tablet</span></div>
+            <button class="check-btn" id="btn-4" onclick="markTaken(4)"></button>
+        </div>
+        <div class="pill-card">
+            <div class="pill-info"><span class="pill-time">8:30 PM (Dinner)</span><span class="pill-name">2 Cancer Tablets</span></div>
+            <button class="check-btn" id="btn-5" onclick="markTaken(5)"></button>
+        </div>
+    </div>
+
+    <div class="history-section">
+        <h3>Last 2 Months Record</h3>
+        <div id="history-container"></div>
+    </div>
+</div>
+
+<script>
+    const schedule = [
+        { id: 1, h: 7, m: 0 },
+        { id: 2, h: 9, m: 0 },
+        { id: 3, h: 12, m: 30 },
+        { id: 4, h: 18, m: 0 },
+        { id: 5, h: 20, m: 30 }
+    ];
+
+    function refreshTracker() {
+        const now = new Date();
+        const dateKey = now.getFullYear() + "-" + (now.getMonth() + 1) + "-" + now.getDate();
+        document.getElementById('currentDate').innerText = now.toDateString();
+
+        schedule.forEach(item => {
+            const btn = document.getElementById(`btn-${item.id}`);
+            const start = new Date();
+            start.setHours(item.h, item.m, 0);
+            const end = new Date(start);
+            end.setHours(start.getHours() + 1);
+
+            const status = localStorage.getItem(`pill_${item.id}_${dateKey}`);
+
+            if (status === 'done') {
+                btn.className = 'check-btn taken'; btn.innerHTML = '✔'; btn.disabled = true;
+            } else if (now > end) {
+                btn.className = 'check-btn missed'; btn.innerHTML = '✘'; btn.disabled = true;
+            } else if (now >= start && now <= end) {
+                btn.className = 'check-btn'; btn.innerHTML = 'TAP'; btn.disabled = false;
+            } else {
+                btn.className = 'check-btn waiting'; btn.innerHTML = '⏳'; btn.disabled = true;
+            }
+        });
+        loadHistory();
+    }
+
+    function markTaken(id) {
+        const now = new Date();
+        const dateKey = now.getFullYear() + "-" + (now.getMonth() + 1) + "-" + now.getDate();
+        localStorage.setItem(`pill_${id}_${dateKey}`, 'done');
+        refreshTracker();
+    }
+
+    function loadHistory() {
+        const historyContainer = document.getElementById('history-container');
+        historyContainer.innerHTML = '';
+        const now = new Date();
+
+        for (let i = 0; i < 2; i++) {
+            const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const monthName = date.toLocaleString('default', { month: 'long', year: 'numeric' });
+            
+            let completed = 0;
+            let total = 0;
+            const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+
+            // Check every dose for the whole month
+            for (let d = 1; d <= daysInMonth; d++) {
+                const checkDate = new Date(date.getFullYear(), date.getMonth(), d);
+                // Only count days that have actually passed
+                if (checkDate <= now) {
+                    const keyPart = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + d;
+                    schedule.forEach(p => {
+                        total++;
+                        if (localStorage.getItem(`pill_${p.id}_${keyPart}`) === 'done') completed++;
+                    });
+                }
+            }
+
+            const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+            
+            const monthDiv = document.createElement('div');
+            monthDiv.className = 'month-box';
+            monthDiv.innerHTML = `
+                <span class="month-title">${monthName}</span>
+                <div class="stat-bar">Doses Taken: ${completed} / ${total} (${percentage}%)</div>
+            `;
+            historyContainer.appendChild(monthDiv);
+        }
+    }
+
+    setInterval(refreshTracker, 10000); // Check every 10 seconds
+    window.onload = refreshTracker;
+</script>
+
+</body>
+</html>
